@@ -7,7 +7,7 @@ pub struct Hyt221 {
 
 impl Hyt221 {
     pub fn new(i2c_address: u16) -> Result<Self, &'static str> {
-        let mut i2c = I2c::new().unwrap();
+        let mut i2c = I2c::new().map_err(|_| "Failed to create i2c")?;
         i2c.set_slave_address(i2c_address).map_err(|_| "Failed to set i2c slave address")?;
         Ok(Hyt221 {
             i2c_device: i2c,

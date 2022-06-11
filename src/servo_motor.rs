@@ -37,6 +37,7 @@ impl ServoMotor {
     }
 
     pub fn move_to_angle_percent(&mut self, angle_percent: u8) -> Result<(), &'static str> {
+        println!("ServoMotor::move_to_angle_percent: angle_percent: {}", angle_percent);
         if !(self.min_angle_percent..self.max_angle_percent).contains(&angle_percent) {
             return Err("Angle out of range");
         }
@@ -45,6 +46,7 @@ impl ServoMotor {
                 for intermediate_angle_percent in current_angle_percent..=angle_percent {
                     self.send_angle_position_for_period_number(intermediate_angle_percent, Self::PERIOD_NUMBER_PER_ANGLE_DEGREE);
                 }
+                self.current_angle_percent = Some(angle_percent);
             },
             None => {
                 self.send_angle_position_for_period_number(angle_percent, Self::PERIOD_NUMBER_FOR_UNKNOWN_PREVIOUS_ANGLE);
@@ -61,22 +63,7 @@ impl ServoMotor {
             self.gpio_pin.set_high();
             thread::sleep(Duration::from_micros(servo_delay_high_us));
             self.gpio_pin.set_low();
-            thread::sleep(Duration::from_millis(servo_delay_low_us));
+            thread::sleep(Duration::from_micros(servo_delay_low_us));
         }
     }
 }
-
-
-/*
-    unsigned short delayHigh=((percent%101)*20)+500;
-    unsigned short delayLow=20000-delayHigh;
-    wiringPiSetup();
-    pinMode(PIN, OUTPUT);
-    for(unsigned int n=0; n<150; n++)
-    {
-        digitalWrite(PIN, HIGH);
-        delayMicroseconds(delayHigh);
-        digitalWrite(PIN, LOW);
-        delayMicroseconds(delayLow);
-    }
- */
