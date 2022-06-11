@@ -1,0 +1,7 @@
+[build]
+target = "armv7-unknown-linux-gnueabihf"
+rustflags = ["-C", "linker=arm-none-linux-gnueabihf-gcc", "-C", "target-feature=+crt-static"]
+
+# Pi 2/3/4
+[target.armv7-unknown-linux-gnueabihf]
+linker = "arm-none-linux-gnueabihf-gcc"
