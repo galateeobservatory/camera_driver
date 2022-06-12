@@ -16,6 +16,8 @@ impl Hyt221 {
 
     pub fn read(&mut self) -> Result<(f32, f32), &'static str> {
         let mut buf = [0u8; 4];
+        self.i2c_device.write(&[0x00]).map_err(|_| "Failed to write to i2c")?; // Write 0 to trigger refresh
+        std::thread::sleep(std::time::Duration::from_millis(60));
         self.i2c_device.read(&mut buf).map_err(|_| "Failed to read i2c device")?;
         let humidity : u16 = ((buf[0] as u16  & 0x3f) << 8) | buf[1] as u16;
         let temperature : u16 = ((buf[2] as u16) << 8) | buf[3] as u16  & 0xfc;

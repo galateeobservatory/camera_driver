@@ -1,5 +1,7 @@
 use std::env;
-use tiny_http::{Server, Response, Method, Request};
+use std::fs::File;
+use std::str::FromStr;
+use tiny_http::{Server, Response, Method, Request, Header};
 use camera_driver::hyt_221::Hyt221;
 use camera_driver::servo_motor::ServoMotor;
 
@@ -24,8 +26,14 @@ fn main() {
             let _ = request.respond(response);
             continue;
         }
+
         match request.url() {
             "/" => {
+                let front_index_file = File::open("/home/pi/camera_driver/frontend/index.html").unwrap();
+                let response = Response::from_file(front_index_file).with_header(Header::from_str("Content-Type: text/html").unwrap());
+                let _ = request.respond(response);
+            },
+            "/humiditytemp" => {
                 match hyt221.read() {
                     Ok((humidity, temperature)) => {
                         let response = Response::from_string(format!("{{\"humidity\":{},\"temperature\":{}}}", humidity, temperature));
@@ -38,16 +46,16 @@ fn main() {
                 }
             },
             "/up" => {
-                shift_servo_motor_pos(&mut vertical_servo_motor, 2, request);
-            }
-            "/down" => {
                 shift_servo_motor_pos(&mut vertical_servo_motor, -2, request);
             }
+            "/down" => {
+                shift_servo_motor_pos(&mut vertical_servo_motor, 2, request);
+            }
             "/left" => {
-                shift_servo_motor_pos(&mut horizontal_servo_motor, 2, request);
+                shift_servo_motor_pos(&mut horizontal_servo_motor, -2, request);
             }
             "/right" => {
-                shift_servo_motor_pos(&mut horizontal_servo_motor, -2, request);
+                shift_servo_motor_pos(&mut horizontal_servo_motor, 2, request);
             }
             _ => {
                 let response = Response::from_string("404 Not Found").with_status_code(404);
@@ -61,7 +69,7 @@ fn shift_servo_motor_pos(servo_motor: &mut ServoMotor, angle_percent_shift: i8, 
     if let Some(current_angle) = servo_motor.current_angle_percent {
         match servo_motor.move_to_angle_percent((current_angle as i8 + angle_percent_shift) as u8) {
             Ok(_) => {
-                let _ = request_callback.respond(Response::from_string("OK"));
+                let _ = request_callback.respond(Response::from_string("{\"status\": \"OK\"}"));
             },
             Err(error_message) => {
                 let _ = request_callback.respond(Response::from_string(error_message));
@@ -71,3 +79,4 @@ fn shift_servo_motor_pos(servo_motor: &mut ServoMotor, angle_percent_shift: i8, 
 }
 
 // $gpio readall to retrieve pin layout
+// Use anyhow for error handling

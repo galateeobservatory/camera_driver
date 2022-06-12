@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <style>
+        .camera_image {
+            max-width: 70%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+<section>
+    <img src="http://192.168.3.152:7777" class="camera_image">
+</section>
+<section>
+    <button id="buttonMoveLeft">&larr;</button>
+    <button id="buttonMoveRight">&rarr;</button>
+    <button id="buttonMoveUp">&uarr;</button>
+    <button id="buttonMoveDown">&darr;</button>
+</section>
+<section>
+    <div>Current temperature: <span id="current_temp_text"></span> &#8451;</div>
+    <div>Current humidity: <span id="current_hum_text"></span> %</div>
+</section>
+</body>
+<script>
+    const MoveDirection = {
+        LEFT: 'left',
+        RIGHT: 'right',
+        UP: 'up',
+        DOWN: 'down'
+    };
+
+    const current_hum_text_DOM = document.getElementById('current_hum_text');
+    const current_temp_text_DOM = document.getElementById('current_temp_text');
+
+    function move(directionStr) {
+        const movingUrl = 'http://192.168.3.152:8000/' + directionStr;
+        fetch(movingUrl).then(response => response.json()).then(data => {
+            console.log(data);
+        }).then(() => {
+            console.log('move ' + directionStr);
+        });
+    }
+    document.getElementById('buttonMoveLeft').addEventListener('click', () => {
+        move(MoveDirection.LEFT);
+    });
+    document.getElementById('buttonMoveRight').addEventListener('click', () => {
+        move(MoveDirection.RIGHT);
+    });
+    document.getElementById('buttonMoveUp').addEventListener('click', () => {
+        move(MoveDirection.UP);
+    });
+    document.getElementById('buttonMoveDown').addEventListener('click', () => {
+        move(MoveDirection.DOWN);
+    });
+
+    setInterval(() => {
+        fetch('/humiditytemp').then(response => response.json()).then(data => {
+            current_hum_text_DOM.innerText = data.humidity;
+            current_temp_text_DOM.innerText = data.temperature;
+        }).catch(error => {
+            console.log(error);
+        });
+    }, 5000);
+</script>
+</html>

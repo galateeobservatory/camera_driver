@@ -17,7 +17,7 @@ impl ServoMotor {
     const SERVO_MOTOR_MIN_PULSE_WIDTH: u16 = 500;
     const SERVO_MOTOR_PULSE_PERIOD: u16 = 20000;
     const PERIOD_NUMBER_FOR_UNKNOWN_PREVIOUS_ANGLE: u16 = 150;
-    const PERIOD_NUMBER_PER_ANGLE_DEGREE: u16 = 5;
+    const PERIOD_NUMBER_PER_ANGLE_DEGREE: u16 = 50;
     const SERVO_MIN_MICRO_SECONDS_SENSITIVITY: u16 = 20;
 
     pub fn new(pin_number: u8, min_angle_percent: u8, max_angle_percent: u8) -> Result<Self, &'static str> {
@@ -43,9 +43,10 @@ impl ServoMotor {
         }
         match self.current_angle_percent {
             Some(current_angle_percent) => {
-                for intermediate_angle_percent in current_angle_percent..=angle_percent {
+                /*for intermediate_angle_percent in current_angle_percent..=angle_percent {
                     self.send_angle_position_for_period_number(intermediate_angle_percent, Self::PERIOD_NUMBER_PER_ANGLE_DEGREE);
-                }
+                }*/
+                self.send_angle_position_for_period_number(angle_percent, Self::PERIOD_NUMBER_PER_ANGLE_DEGREE);
                 self.current_angle_percent = Some(angle_percent);
             },
             None => {
