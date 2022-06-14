@@ -47,6 +47,7 @@ fn main() {
     };
 
     let server = Server::http(config.camera_binding_network_port).unwrap();
+    let text_html_header = Header::from_str("Content-Type: text/html").unwrap();
     for request in server.incoming_requests() {
         if *request.method() != Method::Get {
             let response =
@@ -55,16 +56,24 @@ fn main() {
             continue;
         }
 
-        config.ip_stream_url.starts_with("http://");
-        let request_host_header_value = request
-            .headers()
-            .iter()
-            .find(|header| header.field.to_string() == "Host")
-            .unwrap()
-            .value
-            .to_string();
+        let request_host_header_value = match request.headers().iter().find(|header| header.field.to_string() == "Host") {
+            Some(header) => header.value.to_string(),
+            None => {
+                let response = Response::from_string("No Host header found").with_status_code(400);
+                let _ = request.respond(response);
+                continue;
+            }
+        };
+
         println!("{} {}", request.method(), request_host_header_value);
-        let requested_ip_addr_as_str = request_host_header_value.split(":").nth(0).unwrap();
+        let requested_ip_addr_as_str = match request_host_header_value.split(":").nth(0) {
+            Some(ip_addr_as_str) => ip_addr_as_str,
+            None => {
+                let response = Response::from_string("Invalid Host header").with_status_code(400);
+                let _ = request.respond(response);
+                continue;
+            }
+        };
         let new_ip_stream_url = config
             .ip_stream_url
             .replace("//localhost", &format!("//{}", requested_ip_addr_as_str));
@@ -73,8 +82,7 @@ fn main() {
             "/" => {
                 let html_content =
                     html_file_content.replace(CAMERA_URL_HTML_PATTERN, &*new_ip_stream_url);
-                let response = Response::from_string(html_content)
-                    .with_header(Header::from_str("Content-Type: text/html").unwrap());
+                let response = Response::from_string(html_content).with_header(text_html_header.clone());
                 let _ = request.respond(response);
             }
             "/humiditytemp" => match hyt221.read() {
