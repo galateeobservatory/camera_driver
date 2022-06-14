@@ -20,15 +20,25 @@ impl ServoMotor {
     const PERIOD_NUMBER_PER_ANGLE_DEGREE: u16 = 50;
     const SERVO_MIN_MICRO_SECONDS_SENSITIVITY: u16 = 20;
 
-    pub fn new(pin_number: u8, min_angle_percent: u8, max_angle_percent: u8) -> Result<Self, &'static str> {
+    pub fn new(
+        pin_number: u8,
+        min_angle_percent: u8,
+        max_angle_percent: u8,
+    ) -> Result<Self, &'static str> {
         if min_angle_percent > max_angle_percent {
             return Err("min_angle_percent must be less than max_angle_percent");
         }
-        if min_angle_percent < Self::SERVO_MOTOR_MIN_ANGLE_PERCENT || max_angle_percent > Self::SERVO_MOTOR_MAX_ANGLE_PERCENT {
+        if min_angle_percent < Self::SERVO_MOTOR_MIN_ANGLE_PERCENT
+            || max_angle_percent > Self::SERVO_MOTOR_MAX_ANGLE_PERCENT
+        {
             return Err("min_angle_percent and max_angle_percent must be between 0 and 180");
         }
         Ok(ServoMotor {
-            gpio_pin: Gpio::new().map_err(|_| "Failed to create gpio")?.get(pin_number).map_err(|_| "Failed to get pin")?.into_output(),
+            gpio_pin: Gpio::new()
+                .map_err(|_| "Failed to create gpio")?
+                .get(pin_number)
+                .map_err(|_| "Failed to get pin")?
+                .into_output(),
             pin_number,
             min_angle_percent,
             max_angle_percent,
@@ -37,20 +47,26 @@ impl ServoMotor {
     }
 
     pub fn move_to_angle_percent(&mut self, angle_percent: u8) -> Result<(), &'static str> {
-        println!("ServoMotor::move_to_angle_percent: angle_percent: {}", angle_percent);
+        println!(
+            "ServoMotor::move_to_angle_percent: angle_percent: {}",
+            angle_percent
+        );
         if !(self.min_angle_percent..self.max_angle_percent).contains(&angle_percent) {
             return Err("Angle out of range");
         }
         match self.current_angle_percent {
-            Some(current_angle_percent) => {
-                /*for intermediate_angle_percent in current_angle_percent..=angle_percent {
-                    self.send_angle_position_for_period_number(intermediate_angle_percent, Self::PERIOD_NUMBER_PER_ANGLE_DEGREE);
-                }*/
-                self.send_angle_position_for_period_number(angle_percent, Self::PERIOD_NUMBER_PER_ANGLE_DEGREE);
+            Some(_) => {
+                self.send_angle_position_for_period_number(
+                    angle_percent,
+                    Self::PERIOD_NUMBER_PER_ANGLE_DEGREE,
+                );
                 self.current_angle_percent = Some(angle_percent);
-            },
+            }
             None => {
-                self.send_angle_position_for_period_number(angle_percent, Self::PERIOD_NUMBER_FOR_UNKNOWN_PREVIOUS_ANGLE);
+                self.send_angle_position_for_period_number(
+                    angle_percent,
+                    Self::PERIOD_NUMBER_FOR_UNKNOWN_PREVIOUS_ANGLE,
+                );
                 self.current_angle_percent = Some(angle_percent);
             }
         }
@@ -58,7 +74,9 @@ impl ServoMotor {
     }
 
     fn send_angle_position_for_period_number(&mut self, angle_percent: u8, period_number: u16) {
-        let servo_delay_high_us = (angle_percent as u64 * Self::SERVO_MIN_MICRO_SECONDS_SENSITIVITY as u64) + Self::SERVO_MOTOR_MIN_PULSE_WIDTH as u64;
+        let servo_delay_high_us = (angle_percent as u64
+            * Self::SERVO_MIN_MICRO_SECONDS_SENSITIVITY as u64)
+            + Self::SERVO_MOTOR_MIN_PULSE_WIDTH as u64;
         let servo_delay_low_us = Self::SERVO_MOTOR_PULSE_PERIOD as u64 - servo_delay_high_us;
         for _ in 0..period_number {
             self.gpio_pin.set_high();

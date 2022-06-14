@@ -10,7 +10,7 @@
 </head>
 <body>
 <section>
-    <img src="http://192.168.3.152:7777" class="camera_image">
+    <img src="{CAMERA_URL}" class="camera_image">
 </section>
 <section>
     <button id="buttonMoveLeft">&larr;</button>
@@ -35,7 +35,7 @@
     const current_temp_text_DOM = document.getElementById('current_temp_text');
 
     function move(directionStr) {
-        const movingUrl = 'http://192.168.3.152:8000/' + directionStr;
+        const movingUrl = '/' + directionStr;
         fetch(movingUrl).then(response => response.json()).then(data => {
             console.log(data);
         }).then(() => {
