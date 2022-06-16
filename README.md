@@ -24,7 +24,7 @@ Then Retrieve the **BCM** GPIO pin of the servo motors:
 
 Create a **config.toml** file with the following content:
 
-```toml
+```
 camera_binding_network_port = [Binding address and port, ie: "0.0.0.0:8000"]
 hyt221_i2c_address = [HYT221 I2C address]
 vertical_servo_motor_gpio_pin = [Vertical servo motor GPIO pin]
