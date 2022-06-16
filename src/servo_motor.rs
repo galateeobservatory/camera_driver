@@ -1,6 +1,36 @@
 use rppal::gpio::{Gpio, OutputPin};
 use std::thread;
 use std::time::Duration;
+use thiserror::Error;
+use anyhow::{anyhow, Result};
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Invalid angle (expected between {min:?} and {max:?}, got {angle:?}")]
+    InvalidAngle {
+        min: u8,
+        max: u8,
+        angle: u8,
+    },
+    #[error("Failed to create GPIO object")]
+    GpioCreationError,
+    #[error("Failed to get GPIO pin {pin_number:?}")]
+    GpioPinError {
+        pin_number: u8,
+    },
+    #[error("min_angle_percent {min_angle_percent:?} must be less than max_angle_percent {max_angle_percent:?}")]
+    MinMaxAngleError {
+        min_angle_percent: u8,
+        max_angle_percent: u8,
+    },
+    #[error("min_angle_percent {min_angle_percent:?} and max_angle_percent {max_angle_percent:?} must be between {min_allowed_angle:?} and {max_allowed_angle:?}")]
+    MinMaxAngleRangeError {
+        min_angle_percent: u8,
+        max_angle_percent: u8,
+        min_allowed_angle: u8,
+        max_allowed_angle: u8,
+    },
+}
 
 #[derive(Debug)]
 pub struct ServoMotor {
@@ -24,20 +54,20 @@ impl ServoMotor {
         pin_number: u8,
         min_angle_percent: u8,
         max_angle_percent: u8,
-    ) -> Result<Self, &'static str> {
+    ) -> Result<Self, anyhow::Error> {
         if min_angle_percent > max_angle_percent {
-            return Err("min_angle_percent must be less than max_angle_percent");
+            return Err(anyhow!("min_angle_percent {} must be less than max_angle_percent {}", min_angle_percent, max_angle_percent));
         }
         if min_angle_percent < Self::SERVO_MOTOR_MIN_ANGLE_PERCENT
             || max_angle_percent > Self::SERVO_MOTOR_MAX_ANGLE_PERCENT
         {
-            return Err("min_angle_percent and max_angle_percent must be between 0 and 180");
+            return Err(anyhow!("min_angle_percent {} and max_angle_percent {} must be between {} and {}", min_angle_percent, max_angle_percent, Self::SERVO_MOTOR_MIN_ANGLE_PERCENT, Self::SERVO_MOTOR_MAX_ANGLE_PERCENT));
         }
         Ok(ServoMotor {
             gpio_pin: Gpio::new()
-                .map_err(|_| "Failed to create gpio")?
+                .map_err(|_| Error::GpioCreationError)?
                 .get(pin_number)
-                .map_err(|_| "Failed to get pin")?
+                .map_err(|_| anyhow!("Failed to get GPIO pin {}", pin_number))?
                 .into_output(),
             pin_number,
             min_angle_percent,
@@ -46,13 +76,13 @@ impl ServoMotor {
         })
     }
 
-    pub fn move_to_angle_percent(&mut self, angle_percent: u8) -> Result<(), &'static str> {
+    pub fn move_to_angle_percent(&mut self, angle_percent: u8) -> Result<(), anyhow::Error> {
         println!(
             "ServoMotor::move_to_angle_percent: angle_percent: {}",
             angle_percent
         );
         if !(self.min_angle_percent..self.max_angle_percent).contains(&angle_percent) {
-            return Err("Angle out of range");
+            return Err(anyhow!("Invalid angle (expected between {} and {}, got {}", self.min_angle_percent, self.max_angle_percent, angle_percent));
         }
         match self.current_angle_percent {
             Some(_) => {

@@ -1,10 +1,11 @@
 use camera_driver::hyt_221::Hyt221;
 use camera_driver::servo_motor::ServoMotor;
 use config_file::FromConfigFile;
-use serde::Deserialize;
 use std::str::FromStr;
 use std::{env, fs};
 use tiny_http::{Header, Method, Request, Response, Server};
+mod config;
+use config::Config;
 
 const CAMERA_URL_HTML_PATTERN: &'static str = "{CAMERA_URL}";
 
@@ -94,7 +95,7 @@ fn main() {
                     let _ = request.respond(response);
                 }
                 Err(e) => {
-                    let response = Response::from_string(format!("{{\"error\":\"{}\"}}", e));
+                    let response = Response::from_string(format!("{{\"status\": \"Err\", \"error\":\"{}\"}}", e));
                     let _ = request.respond(response);
                 }
             },
@@ -144,30 +145,11 @@ fn shift_servo_motor_pos(
             Ok(_) => {
                 let _ = request_callback.respond(Response::from_string("{\"status\": \"OK\"}"));
             }
-            Err(error_message) => {
-                let _ = request_callback.respond(Response::from_string(error_message));
+            Err(error) => {
+                let _ = request_callback.respond(Response::from_string(format!("{{\"status\": \"Err\", \"error\": \" {} \"}}", error.to_string())));
             }
         }
     }
 }
 
-#[derive(Deserialize)]
-struct Config {
-    camera_binding_network_port: String,
-    hyt221_i2c_address: u16,
-    vertical_servo_motor_gpio_pin: u8,
-    horizontal_servo_motor_gpio_pin: u8,
-    vertical_servo_motor_angle_percent_max: u8,
-    horizontal_servo_motor_angle_percent_max: u8,
-    vertical_servo_motor_angle_percent_min: u8,
-    horizontal_servo_motor_angle_percent_min: u8,
-    is_horizontal_servo_motor_inverted: bool,
-    is_vertical_servo_motor_inverted: bool,
-    vertical_servo_motor_initial_angle: u8,
-    horizontal_servo_motor_initial_angle: u8,
-    html_file_path: String,
-    ip_stream_url: String, // note that "//localhost" will be replaced with the actual IP address
-}
-
 // $gpio readall to retrieve pin layout
-// Use anyhow for error handling
