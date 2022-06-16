@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub(crate) struct Config {
-    pub(crate) camera_binding_network_port: String,
+    pub(crate) camera_binding_network_port: String, // ie: "0.0.0.0:8000"
     pub(crate) hyt221_i2c_address: u16,
     pub(crate) vertical_servo_motor_gpio_pin: u8,
     pub(crate) horizontal_servo_motor_gpio_pin: u8,

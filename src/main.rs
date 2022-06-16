@@ -50,6 +50,7 @@ fn main() {
     let server = Server::http(config.camera_binding_network_port).unwrap();
     let text_html_header = Header::from_str("Content-Type: text/html").unwrap();
     for request in server.incoming_requests() {
+        // Only GET requests are supported
         if *request.method() != Method::Get {
             let response =
                 Response::from_string("Only GET requests are supported").with_status_code(405);
@@ -57,7 +58,11 @@ fn main() {
             continue;
         }
 
-        let request_host_header_value = match request.headers().iter().find(|header| header.field.to_string() == "Host") {
+        let request_host_header_value = match request
+            .headers()
+            .iter()
+            .find(|header| header.field.to_string() == "Host")
+        {
             Some(header) => header.value.to_string(),
             None => {
                 let response = Response::from_string("No Host header found").with_status_code(400);
@@ -66,7 +71,7 @@ fn main() {
             }
         };
 
-        println!("{} {}", request.method(), request_host_header_value);
+        // Get request destination address
         let requested_ip_addr_as_str = match request_host_header_value.split(":").nth(0) {
             Some(ip_addr_as_str) => ip_addr_as_str,
             None => {
@@ -75,15 +80,18 @@ fn main() {
                 continue;
             }
         };
+        // Replace "//localhost" with the actual IP address
         let new_ip_stream_url = config
             .ip_stream_url
             .replace("//localhost", &format!("//{}", requested_ip_addr_as_str));
 
         match request.url() {
             "/" => {
+                // Index
                 let html_content =
                     html_file_content.replace(CAMERA_URL_HTML_PATTERN, &*new_ip_stream_url);
-                let response = Response::from_string(html_content).with_header(text_html_header.clone());
+                let response =
+                    Response::from_string(html_content).with_header(text_html_header.clone());
                 let _ = request.respond(response);
             }
             "/humiditytemp" => match hyt221.read() {
@@ -95,7 +103,10 @@ fn main() {
                     let _ = request.respond(response);
                 }
                 Err(e) => {
-                    let response = Response::from_string(format!("{{\"status\": \"Err\", \"error\":\"{}\"}}", e));
+                    let response = Response::from_string(format!(
+                        "{{\"status\": \"Err\", \"error\":\"{}\"}}",
+                        e
+                    ));
                     let _ = request.respond(response);
                 }
             },
@@ -135,6 +146,9 @@ fn main() {
     }
 }
 
+// Takes ownership of the request
+// Moves servo motor to the given angle
+// Sends a response to the request
 fn shift_servo_motor_pos(
     servo_motor: &mut ServoMotor,
     angle_percent_shift: i8,
@@ -146,10 +160,11 @@ fn shift_servo_motor_pos(
                 let _ = request_callback.respond(Response::from_string("{\"status\": \"OK\"}"));
             }
             Err(error) => {
-                let _ = request_callback.respond(Response::from_string(format!("{{\"status\": \"Err\", \"error\": \" {} \"}}", error.to_string())));
+                let _ = request_callback.respond(Response::from_string(format!(
+                    "{{\"status\": \"Err\", \"error\": \" {} \"}}",
+                    error.to_string()
+                )));
             }
         }
     }
 }
-
-// $gpio readall to retrieve pin layout

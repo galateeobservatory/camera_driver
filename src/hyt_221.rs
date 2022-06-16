@@ -1,23 +1,17 @@
+use anyhow::{anyhow, Result};
 use rppal::i2c::I2c;
 use thiserror::Error;
-use anyhow::{anyhow, Result};
 
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Failed to create I2C object")]
     I2CCreationError,
     #[error("Failed to set slave I2C address {i2c_address:?}")]
-    I2CSetSlaveAddressError {
-        i2c_address: u16,
-    },
+    I2CSetSlaveAddressError { i2c_address: u16 },
     #[error("Failed to read I2C device {i2c_address:?}")]
-    I2CReadingError {
-        i2c_address: u16,
-    },
+    I2CReadingError { i2c_address: u16 },
     #[error("Failed to write I2C device {i2c_address:?}")]
-    I2CWritingError {
-        i2c_address: u16,
-    },
+    I2CWritingError { i2c_address: u16 },
 }
 
 #[derive(Debug)]
@@ -31,7 +25,10 @@ impl Hyt221 {
         let mut i2c = I2c::new().map_err(|_| Error::I2CCreationError)?;
         i2c.set_slave_address(i2c_address)
             .map_err(|_| anyhow!("Failed to set slave I2C address {}", i2c_address))?;
-        Ok(Hyt221 { i2c_device: i2c, i2c_address })
+        Ok(Hyt221 {
+            i2c_device: i2c,
+            i2c_address,
+        })
     }
 
     pub fn read(&mut self) -> Result<(f32, f32), anyhow::Error> {
@@ -39,7 +36,7 @@ impl Hyt221 {
         self.i2c_device
             .write(&[0x00])
             .map_err(|_| anyhow!("Failed to write I2C device {}", self.i2c_address))?; // Write 0 to trigger refresh
-        std::thread::sleep(std::time::Duration::from_millis(60));
+        std::thread::sleep(std::time::Duration::from_millis(60)); // Wait until temperature and humidity are updated
         self.i2c_device
             .read(&mut buf)
             .map_err(|_| anyhow!("Failed to read I2C device {}", self.i2c_address))?;
