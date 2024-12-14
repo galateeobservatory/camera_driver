@@ -10,6 +10,7 @@ A web interface to control raspberry pi camera's servo motors and I2C HYT 221 se
 
 ### Retrieve components parameters:
 
+You will need to install `i2c-tools` and wiringpi (https://github.com/WiringPi/WiringPi/releases).
 
 First get the I2C HYT 221 sensor address (in hexadecimal format):
 
